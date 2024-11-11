@@ -59,6 +59,7 @@ function Navbar() {
               </Link>
             </div>
           </div>
+
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/events" className="text-rose-600 hover:text-rose-700 transition-colors">
               Ateliers
@@ -70,6 +71,7 @@ function Navbar() {
               Account
             </Link>
           </div>
+
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -80,6 +82,7 @@ function Navbar() {
           </div>
         </div>
       </div>
+
       {isOpen && (
         <div className="md:hidden absolute w-full bg-white/95 backdrop-blur-sm shadow-soft">
           <div className="px-4 pt-2 pb-3 space-y-1">
