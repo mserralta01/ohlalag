@@ -1,5 +1,5 @@
 import admin from 'firebase-admin';
-import { DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import bcrypt from 'bcryptjs';
 
 // Initialize Firebase Admin
 const serviceAccount = {
@@ -26,27 +26,28 @@ try {
 }
 
 const db = admin.firestore();
+const { Timestamp } = admin.firestore;
 
 // Base interface for all documents
 interface BaseDocument {
   id?: string;
-  createdAt: admin.firestore.Timestamp;
-  updatedAt?: admin.firestore.Timestamp;
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
 // Type definitions
 export interface User extends BaseDocument {
   email: string;
+  password: string;
   firstName: string;
   lastName: string;
   phone: string;
   role: 'user' | 'admin';
-  uid?: string; // Firebase Auth UID
 }
 
 export interface Event extends BaseDocument {
   title: string;
-  date: admin.firestore.Timestamp;
+  date: Date;
   time: string;
   location: string;
   price: number;
@@ -70,15 +71,32 @@ export interface Registration extends BaseDocument {
 export interface GalleryItem extends BaseDocument {
   imageUrl: string;
   artistName: string;
-  date: admin.firestore.Timestamp;
+  date: Date;
 }
 
 export interface Expense extends BaseDocument {
   category: string;
   amount: number;
   description: string;
-  date: admin.firestore.Timestamp;
+  date: Date;
   paymentMethod: 'cash' | 'credit' | 'debit';
+}
+
+interface FirestoreTimestamp {
+  _seconds: number;
+  _nanoseconds: number;
+  toDate(): Date;
+}
+
+// Type guard for Firestore Timestamp
+function isFirestoreTimestamp(value: unknown): value is FirestoreTimestamp {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    '_seconds' in value &&
+    '_nanoseconds' in value &&
+    typeof (value as any).toDate === 'function'
+  );
 }
 
 // Helper function to convert Date objects to Firestore Timestamps
@@ -87,13 +105,34 @@ const convertDatesToTimestamps = (data: Record<string, any>): Record<string, any
   
   for (const [key, value] of Object.entries(data)) {
     if (value instanceof Date) {
-      result[key] = admin.firestore.Timestamp.fromDate(value);
+      result[key] = Timestamp.fromDate(value);
     } else if (Array.isArray(value)) {
       result[key] = value.map(item => 
-        item instanceof Date ? admin.firestore.Timestamp.fromDate(item) : item
+        item instanceof Date ? Timestamp.fromDate(item) : item
       );
     } else if (value && typeof value === 'object') {
       result[key] = convertDatesToTimestamps(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  
+  return result;
+};
+
+// Helper function to convert Firestore Timestamps to Dates
+const convertTimestampsToDate = (data: Record<string, any>): Record<string, any> => {
+  const result: Record<string, any> = {};
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (isFirestoreTimestamp(value)) {
+      result[key] = value.toDate();
+    } else if (Array.isArray(value)) {
+      result[key] = value.map(item => 
+        isFirestoreTimestamp(item) ? item.toDate() : item
+      );
+    } else if (value && typeof value === 'object') {
+      result[key] = convertTimestampsToDate(value);
     } else {
       result[key] = value;
     }
@@ -107,13 +146,20 @@ export const db_ops = {
   // Create a new document
   async create<T extends BaseDocument>(
     collectionName: string,
-    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>
+    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { password?: string }
   ): Promise<string> {
     try {
+      // Hash password if it's a user document
+      let processedData: Record<string, any> = { ...data };
+      if (collectionName === 'users' && processedData.password) {
+        const salt = await bcrypt.genSalt(10);
+        processedData.password = await bcrypt.hash(processedData.password, salt);
+      }
+
       // Convert all dates to Timestamps and add metadata
-      const now = admin.firestore.Timestamp.fromDate(new Date());
-      const processedData = {
-        ...convertDatesToTimestamps(data),
+      const now = Timestamp.fromDate(new Date());
+      processedData = {
+        ...convertDatesToTimestamps(processedData),
         createdAt: now,
         updatedAt: now
       };
@@ -134,15 +180,15 @@ export const db_ops = {
   // Read a document
   async get<T extends BaseDocument>(collectionName: string, id: string): Promise<T | null> {
     try {
-      const docSnapshot: DocumentSnapshot = await db.collection(collectionName).doc(id).get();
+      const doc = await db.collection(collectionName).doc(id).get();
       
-      if (!docSnapshot.exists) {
+      if (!doc.exists) {
         return null;
       }
       
       return {
-        id: docSnapshot.id,
-        ...docSnapshot.data()
+        id: doc.id,
+        ...convertTimestampsToDate(doc.data() || {})
       } as T;
     } catch (error) {
       console.error(`Error getting document from ${collectionName}:`, error);
@@ -154,9 +200,9 @@ export const db_ops = {
   async getAll<T extends BaseDocument>(collectionName: string): Promise<T[]> {
     try {
       const snapshot = await db.collection(collectionName).get();
-      return snapshot.docs.map((docSnapshot: QueryDocumentSnapshot) => ({
-        id: docSnapshot.id,
-        ...docSnapshot.data()
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...convertTimestampsToDate(doc.data())
       })) as T[];
     } catch (error) {
       console.error(`Error getting all documents from ${collectionName}:`, error);
@@ -173,7 +219,7 @@ export const db_ops = {
     try {
       const processedData = {
         ...convertDatesToTimestamps(data),
-        updatedAt: admin.firestore.Timestamp.fromDate(new Date())
+        updatedAt: Timestamp.fromDate(new Date())
       };
 
       await db.collection(collectionName).doc(id).update(processedData);
@@ -201,14 +247,14 @@ export const db_ops = {
     value: any
   ): Promise<T[]> {
     try {
-      const processedValue = value instanceof Date ? admin.firestore.Timestamp.fromDate(value) : value;
+      const processedValue = value instanceof Date ? Timestamp.fromDate(value) : value;
       const snapshot = await db.collection(collectionName)
         .where(field, operator, processedValue)
         .get();
 
-      return snapshot.docs.map((docSnapshot: QueryDocumentSnapshot) => ({
-        id: docSnapshot.id,
-        ...docSnapshot.data()
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...convertTimestampsToDate(doc.data())
       })) as T[];
     } catch (error) {
       console.error(`Error querying documents in ${collectionName}:`, error);

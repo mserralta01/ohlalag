@@ -1,9 +1,6 @@
 import { config } from 'dotenv';
 import { join } from 'path';
 import { writeFileSync } from 'fs';
-import admin from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
-import { db_ops, User, Event, Registration, GalleryItem, Expense } from '../src/lib/db';
 
 // Setup environment variables
 const envContent = `VITE_FIREBASE_API_KEY=AIzaSyCInw1-3dqnxZ9S_oVVkLhEdEJx2byAFWA
@@ -14,10 +11,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=130355956024
 VITE_FIREBASE_APP_ID=1:130355956024:web:045f69a62aee442a6dd9cd
 VITE_FIREBASE_MEASUREMENT_ID=G-JL325R8E4Q
 VITE_STRIPE_PUBLISHABLE_KEY=pk_live_51QJeHcIH0Nj8caTBcKr82egiNE6E3BuoFialu70DJBPGQcRaSk9tqwH8ELX9EhjdwfLIiUuxyuUwAIAMr34o6VaQ00kLCicG0s
-VITE_JWT_SECRET=ohlala_jwt_secret_2024
-FIREBASE_PROJECT_ID=desings-by-ohlala
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDssMELYbg+H0Iz\n038T/MmeOqqpOEFHxg1dRT6f9seyAVwVpb2ZGQPET1uQzLnc6uFCVQgk9//FzugX\ncIHrE37/soP0s2AfGDzUnqzy88t6QyUWgvUhSZ/6lcZ+CpkkriQLgOp6PueVOyPH\nPh4oIryI/YlOKi6AGJAy8Pf/JtBAT0sI15mN27tMKVZ7ZHXZ4qtt2UXckpI1k/4K\nkylBAUcwzm9ZOYw6vw/xu9dFh80+GXC4frcJJlkcuBPuHVXneA5xMN4kI1sVjnow\nR1BHyEbIlnhY9UCMYx6VTCqavsk2qbk9UnywOQfkmEuijQwH812qmERhRqMudL0A\nGgC1w67vAgMBAAECggEAC/BPqtnNsWbiCXtjcqgl3IY8CBevON+u2koJ9YdwNwFy\nwIeUKS4Su3eyeC4DbNCO9smtBMrBMYKVJv2E6Bnn8x2kVbCO91j0uvE00Xcy1JXU\nP8iKQcwVA2hDoCVVTsoKRZqsLE9fXtUiIffEDXID5x49K0UQaspFl8EBpiXLvyD7\nIU/4COzx+iP96+8s4Zm+bmL2+I0ZPKc4Jy+FzP3e6aFmdIx+pXEZPbfVz3xC/9ix\ng+8mFgRxNaGs0UchMjHYERNVVKb5oVtOOpLhsriCjKtGWYbks4rEWhHBg3CXuPY9\nSPpfT9JS4hNQG+LpFep8S9oLziAiLnRFZMo9rWY53QKBgQD9xQGvRYOsGbbhupcM\njP7gFlAVMYSjmM+cqhFsabU8EtrxyfRak7AJ5WiA1IroOm8e4i3z85kHFtENMfSo\nsto86LnPpexuiW2Nn8bRxrTZADJPS8mc4/bcaWbetnPYld+VP260X4M4Qra+heFZ\nGR8/fCixiK1OKaHL119bkWLdfQKBgQDuxVGWHH90MrCHXER2MkFtTUB9qOdl2oHb\ncsrv19tZeQOhZ1xNk0jGAJhMK8O+WsnBn1+HVx63NfbSF/R5lquhH2BTsEXJVvwx\nyKGOaxjkC8t9YL4WcI8FzXhWPwAEiryxajwDT6GJUKkDFFYgsnj3vH39KSC9J/KW\nv6M6qfsZ2wKBgQDlaeeG+zH5MNn7IUMSjpiQHrvRHQ4LE8eEmt7bgojcQTN76JYm\nGGPJ3oHmDb9yB/mTEuh2JR+PoBnncuT6aY4QCFiKlzayCz1mDi6gUKIHlzzkIOCo\nHBJ82jCsYIdEIuGYvFqpZ7tp7i3k+YVqleKA8w6ayLPb+JkTfaXwUvPsxQKBgQDF\nKhDt2MhyRi05CTrLM0KNpD39xcyWcbHLaWYkWWWa42/ZBwXUVSvBvNoGBBmWBVgW\n16jFlG4bsacH45oQERfWa5daY/Osh3SnE1o8xTj/jrHQ7WLqGrYvf3TAGzPDjGC2\nS9gUj9v/DKkTjuZ0B4wWXgLXWu/a4rLSQpriJVzhAwKBgGl7Rv7uNZPXG2Al0rfD\nTSTEU90vObe4XQ5/oE0uerghtFjVPCMaDeNKZjTwMaOpbUFCPAiUR2pAIl64kYeM\n4J3fxYDUCwgmTPZQK+WFqMVN1J3WasKZEqgGYr65yz34jz4Wdg2RuVl0plhCDP8J\njhrvcAiqbH2VNwEcFIBSOG0Y\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-9l7jd@desings-by-ohlala.iam.gserviceaccount.com`;
+VITE_JWT_SECRET=ohlala_jwt_secret_2024`;
 
 // Write .env file
 writeFileSync(join(process.cwd(), '.env'), envContent);
@@ -25,42 +19,36 @@ writeFileSync(join(process.cwd(), '.env'), envContent);
 // Load environment variables
 config();
 
+import { db_ops, User, Event, Registration, GalleryItem, Expense } from '../src/lib/db';
+
 async function testDatabase() {
   console.log('Starting Firebase database tests...\n');
 
   try {
-    // Test User Creation with Firebase Auth
-    console.log('Testing User creation with Firebase Auth...');
-    const auth = getAuth();
-    const userRecord = await auth.createUser({
-      email: 'test@example.com',
-      password: 'TestPassword123!',
-      displayName: 'Test User',
-      phoneNumber: '+15550123'
-    });
-    console.log('✅ Successfully created Firebase Auth user');
-
-    // Create corresponding user document in Firestore
+    // Test User Model
+    console.log('Testing User collection...');
     const userId = await db_ops.create<User>('users', {
       email: 'test@example.com',
+      password: 'TestPassword123!',
       firstName: 'Test',
       lastName: 'User',
-      phone: '+15550123',
+      phone: '555-0123',
       role: 'user',
-      uid: userRecord.uid
+      createdAt: new Date()
     });
-    console.log('✅ Successfully created Firestore user document');
-
-    // Clean up test user
-    await auth.deleteUser(userRecord.uid);
+    console.log('✅ Successfully created test user');
+    
+    const foundUser = await db_ops.get<User>('users', userId);
+    console.log('✅ Successfully retrieved test user');
+    
     await db_ops.delete('users', userId);
-    console.log('✅ Successfully cleaned up test user\n');
+    console.log('✅ Successfully deleted test user\n');
 
     // Test Event Model
     console.log('Testing Event collection...');
     const eventId = await db_ops.create<Event>('events', {
       title: 'Test Event',
-      date: admin.firestore.Timestamp.fromDate(new Date()),
+      date: new Date(),
       time: '19:00',
       location: 'Test Location',
       price: 89.99,
@@ -69,7 +57,9 @@ async function testDatabase() {
       spotsAvailable: 10,
       totalSpots: 10,
       duration: '2 hours',
-      includes: ['Test Item 1', 'Test Item 2']
+      includes: ['Test Item 1', 'Test Item 2'],
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
     console.log('✅ Successfully created test event');
     
@@ -87,7 +77,8 @@ async function testDatabase() {
       lastName: 'Attendee',
       email: 'attendee@example.com',
       phone: '555-0124',
-      paymentStatus: 'pending'
+      paymentStatus: 'pending',
+      createdAt: new Date()
     });
     console.log('✅ Successfully created test registration');
     
@@ -102,7 +93,8 @@ async function testDatabase() {
     const galleryItemId = await db_ops.create<GalleryItem>('gallery', {
       imageUrl: 'https://example.com/test.jpg',
       artistName: 'Test Artist',
-      date: admin.firestore.Timestamp.fromDate(new Date())
+      date: new Date(),
+      createdAt: new Date()
     });
     console.log('✅ Successfully created test gallery item');
     
@@ -118,8 +110,9 @@ async function testDatabase() {
       category: 'Supplies',
       amount: 49.99,
       description: 'Test Expense',
-      date: admin.firestore.Timestamp.fromDate(new Date()),
-      paymentMethod: 'credit'
+      date: new Date(),
+      paymentMethod: 'credit',
+      createdAt: new Date()
     });
     console.log('✅ Successfully created test expense');
     

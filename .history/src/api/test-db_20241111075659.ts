@@ -1,6 +1,4 @@
-import admin from 'firebase-admin';
-import db from '../lib/db';
-import { CollectionReference } from 'firebase-admin/firestore';
+import { db } from '../lib/db';
 
 export default async function handler(req: Request) {
   if (req.method !== 'GET') {
@@ -9,11 +7,11 @@ export default async function handler(req: Request) {
 
   try {
     // Test database connection by attempting to list collections
-    const collections = await admin.firestore().listCollections();
+    const collections = await db.listCollections();
     return new Response(JSON.stringify({
       status: 'success',
       message: 'Database connection successful',
-      collections: collections.map((col: CollectionReference) => col.id)
+      collections: collections.map(col => col.id)
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

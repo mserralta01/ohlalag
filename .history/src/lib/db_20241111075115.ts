@@ -1,5 +1,5 @@
 import admin from 'firebase-admin';
-import { DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import bcrypt from 'bcryptjs';
 
 // Initialize Firebase Admin
 const serviceAccount = {
@@ -37,11 +37,11 @@ interface BaseDocument {
 // Type definitions
 export interface User extends BaseDocument {
   email: string;
+  password: string;
   firstName: string;
   lastName: string;
   phone: string;
   role: 'user' | 'admin';
-  uid?: string; // Firebase Auth UID
 }
 
 export interface Event extends BaseDocument {
@@ -107,13 +107,20 @@ export const db_ops = {
   // Create a new document
   async create<T extends BaseDocument>(
     collectionName: string,
-    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>
+    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { password?: string }
   ): Promise<string> {
     try {
+      // Hash password if it's a user document
+      let processedData: Record<string, any> = { ...data };
+      if (collectionName === 'users' && processedData.password) {
+        const salt = await bcrypt.genSalt(10);
+        processedData.password = await bcrypt.hash(processedData.password, salt);
+      }
+
       // Convert all dates to Timestamps and add metadata
       const now = admin.firestore.Timestamp.fromDate(new Date());
-      const processedData = {
-        ...convertDatesToTimestamps(data),
+      processedData = {
+        ...convertDatesToTimestamps(processedData),
         createdAt: now,
         updatedAt: now
       };
@@ -134,7 +141,7 @@ export const db_ops = {
   // Read a document
   async get<T extends BaseDocument>(collectionName: string, id: string): Promise<T | null> {
     try {
-      const docSnapshot: DocumentSnapshot = await db.collection(collectionName).doc(id).get();
+      const docSnapshot = await db.collection(collectionName).doc(id).get();
       
       if (!docSnapshot.exists) {
         return null;
@@ -154,7 +161,7 @@ export const db_ops = {
   async getAll<T extends BaseDocument>(collectionName: string): Promise<T[]> {
     try {
       const snapshot = await db.collection(collectionName).get();
-      return snapshot.docs.map((docSnapshot: QueryDocumentSnapshot) => ({
+      return snapshot.docs.map(docSnapshot => ({
         id: docSnapshot.id,
         ...docSnapshot.data()
       })) as T[];
@@ -206,7 +213,7 @@ export const db_ops = {
         .where(field, operator, processedValue)
         .get();
 
-      return snapshot.docs.map((docSnapshot: QueryDocumentSnapshot) => ({
+      return snapshot.docs.map(docSnapshot => ({
         id: docSnapshot.id,
         ...docSnapshot.data()
       })) as T[];

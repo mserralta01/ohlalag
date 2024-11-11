@@ -1,9 +1,6 @@
 import { config } from 'dotenv';
 import { join } from 'path';
 import { writeFileSync } from 'fs';
-import admin from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
-import { db_ops, User, Event, Registration, GalleryItem, Expense } from '../src/lib/db';
 
 // Setup environment variables
 const envContent = `VITE_FIREBASE_API_KEY=AIzaSyCInw1-3dqnxZ9S_oVVkLhEdEJx2byAFWA
@@ -25,42 +22,35 @@ writeFileSync(join(process.cwd(), '.env'), envContent);
 // Load environment variables
 config();
 
+import { db_ops, User, Event, Registration, GalleryItem, Expense } from '../src/lib/db';
+
 async function testDatabase() {
   console.log('Starting Firebase database tests...\n');
 
   try {
-    // Test User Creation with Firebase Auth
-    console.log('Testing User creation with Firebase Auth...');
-    const auth = getAuth();
-    const userRecord = await auth.createUser({
-      email: 'test@example.com',
-      password: 'TestPassword123!',
-      displayName: 'Test User',
-      phoneNumber: '+15550123'
-    });
-    console.log('✅ Successfully created Firebase Auth user');
-
-    // Create corresponding user document in Firestore
+    // Test User Model
+    console.log('Testing User collection...');
     const userId = await db_ops.create<User>('users', {
       email: 'test@example.com',
+      password: 'TestPassword123!',
       firstName: 'Test',
       lastName: 'User',
-      phone: '+15550123',
-      role: 'user',
-      uid: userRecord.uid
+      phone: '555-0123',
+      role: 'user'
     });
-    console.log('✅ Successfully created Firestore user document');
-
-    // Clean up test user
-    await auth.deleteUser(userRecord.uid);
+    console.log('✅ Successfully created test user');
+    
+    const foundUser = await db_ops.get<User>('users', userId);
+    console.log('✅ Successfully retrieved test user');
+    
     await db_ops.delete('users', userId);
-    console.log('✅ Successfully cleaned up test user\n');
+    console.log('✅ Successfully deleted test user\n');
 
     // Test Event Model
     console.log('Testing Event collection...');
     const eventId = await db_ops.create<Event>('events', {
       title: 'Test Event',
-      date: admin.firestore.Timestamp.fromDate(new Date()),
+      date: new Date(),
       time: '19:00',
       location: 'Test Location',
       price: 89.99,
@@ -102,7 +92,7 @@ async function testDatabase() {
     const galleryItemId = await db_ops.create<GalleryItem>('gallery', {
       imageUrl: 'https://example.com/test.jpg',
       artistName: 'Test Artist',
-      date: admin.firestore.Timestamp.fromDate(new Date())
+      date: new Date()
     });
     console.log('✅ Successfully created test gallery item');
     
@@ -118,7 +108,7 @@ async function testDatabase() {
       category: 'Supplies',
       amount: 49.99,
       description: 'Test Expense',
-      date: admin.firestore.Timestamp.fromDate(new Date()),
+      date: new Date(),
       paymentMethod: 'credit'
     });
     console.log('✅ Successfully created test expense');
