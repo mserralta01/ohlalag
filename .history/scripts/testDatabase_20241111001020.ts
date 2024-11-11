@@ -13,7 +13,7 @@ async function testDatabase() {
   try {
     // Test Connection
     console.log('Testing connection...');
-    await mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true, ssl: true, sslValidate: true });
+    await mongoose.connect(MONGODB_URI);
     console.log('✅ Successfully connected to MongoDB\n');
 
     // Test User Model
@@ -110,7 +110,6 @@ async function testDatabase() {
 
   } catch (error) {
     console.error('❌ Error during database tests:', error);
-    console.error('❌ Detailed error:', error.message);
   } finally {
     await mongoose.disconnect();
     console.log('\nDatabase connection closed.');

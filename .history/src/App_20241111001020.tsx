@@ -12,7 +12,7 @@ import Dashboard from './pages/Dashboard';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
 
-// Ensure the environment variable is correctly referenced
+// Make sure to use the environment variable correctly
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 function App() {
