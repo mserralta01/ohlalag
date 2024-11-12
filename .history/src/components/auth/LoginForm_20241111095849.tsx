@@ -54,9 +54,6 @@ function LoginForm() {
         },
         body: JSON.stringify({
           firebaseToken: idToken,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
         }),
       });
 
@@ -68,7 +65,6 @@ function LoginForm() {
 
       setAuth(data.user, data.token);
     } catch (err) {
-      console.error('Social login error:', err);
       setError(err instanceof Error ? err.message : 'Social login failed');
     }
   };

@@ -1,11 +1,18 @@
-import admin from '../../lib/firebaseAdmin';
-import { generateToken } from '../../lib/auth';
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import admin from './src/lib/firebaseAdmin';
+import { generateToken } from './src/lib/auth';
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
+const app = express();
 
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Routes
+const router = express.Router();
+
+router.post('/auth/social-login', async (req: Request, res: Response) => {
   try {
     const { firebaseToken } = req.body;
 
@@ -33,4 +40,12 @@ export default async function handler(req: any, res: any) {
     console.error('Social login error:', error);
     return res.status(500).json({ message: 'Authentication failed' });
   }
-}
+});
+
+// Mount routes
+app.use('/api', router);
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`API Server running on port ${PORT}`);
+});

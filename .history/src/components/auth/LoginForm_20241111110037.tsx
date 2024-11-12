@@ -54,11 +54,12 @@ function LoginForm() {
         },
         body: JSON.stringify({
           firebaseToken: idToken,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
 
       const data = await response.json();
 
@@ -67,8 +68,10 @@ function LoginForm() {
       }
 
       setAuth(data.user, data.token);
+
+      // Redirect to admin area
+      window.location.href = '/dashboard';
     } catch (err) {
-      console.error('Social login error:', err);
       setError(err instanceof Error ? err.message : 'Social login failed');
     }
   };

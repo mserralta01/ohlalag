@@ -3,13 +3,13 @@ import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth
 import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID,
-  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyCInw1-3dqnxZ9S_oVVkLhEdEJx2byAFWA",
+  authDomain: "desings-by-ohlala.firebaseapp.com",
+  projectId: "desings-by-ohlala",
+  storageBucket: "desings-by-ohlala.firebasestorage.app",
+  messagingSenderId: "130355956024",
+  appId: "1:130355956024:web:045f69a62aee442a6dd9cd",
+  measurementId: "G-JL325R8E4Q"
 };
 
 const app = initializeApp(firebaseConfig);

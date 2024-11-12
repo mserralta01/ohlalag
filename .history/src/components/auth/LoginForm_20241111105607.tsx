@@ -47,18 +47,19 @@ function LoginForm() {
       const idToken = await user.getIdToken();
       
       // Exchange Firebase token for our JWT
-      const response = await fetch('/api/auth/social-login', {
+      const response = await fetch('http://localhost:5174/api/auth/social-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           firebaseToken: idToken,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
 
       const data = await response.json();
 
@@ -67,8 +68,10 @@ function LoginForm() {
       }
 
       setAuth(data.user, data.token);
+
+      // Redirect to admin area
+      window.location.href = '/dashboard';
     } catch (err) {
-      console.error('Social login error:', err);
       setError(err instanceof Error ? err.message : 'Social login failed');
     }
   };
