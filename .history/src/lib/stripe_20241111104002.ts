@@ -1,1 +1,0 @@
-// Delete the entire file as it is dedicated to Stripe functionality
