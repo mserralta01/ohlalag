@@ -1,40 +1,79 @@
-import { db_ops, Event } from '../../lib/db';
+import { connectDB } from '../../lib/db';
+import Event from '../../models/Event';
 
-export default async function handler(req: Request) {
+export async function GET(req: Request) {
   try {
-    const { method } = req;
+    await connectDB();
     const id = req.url.split('/').pop();
+    const event = await Event.findById(id);
 
-    if (!id) {
-      return new Response('Event ID is required', { status: 400 });
+    if (!event) {
+      return new Response(
+        JSON.stringify({ message: 'Event not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    switch (method) {
-      case 'GET':
-        const event = await db_ops.get<Event>('events', id);
-        if (!event) {
-          return new Response('Event not found', { status: 404 });
-        }
-        return new Response(JSON.stringify(event), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-      case 'PUT':
-      case 'PATCH':
-        const updateData = await req.json();
-        await db_ops.update<Event>('events', id, updateData);
-        return new Response('Event updated successfully', { status: 200 });
-
-      case 'DELETE':
-        await db_ops.delete('events', id);
-        return new Response('Event deleted successfully', { status: 200 });
-
-      default:
-        return new Response('Method not allowed', { status: 405 });
-    }
+    return new Response(
+      JSON.stringify(event),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Event API error:', error);
-    return new Response('Internal Server Error', { status: 500 });
+    return new Response(
+      JSON.stringify({ message: 'Failed to fetch event' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    await connectDB();
+    const id = req.url.split('/').pop();
+    const updates = await req.json();
+    
+    const event = await Event.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!event) {
+      return new Response(
+        JSON.stringify({ message: 'Event not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify(event),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ message: 'Failed to update event' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    await connectDB();
+    const id = req.url.split('/').pop();
+    const event = await Event.findByIdAndDelete(id);
+
+    if (!event) {
+      return new Response(
+        JSON.stringify({ message: 'Event not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ message: 'Event deleted successfully' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ message: 'Failed to delete event' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

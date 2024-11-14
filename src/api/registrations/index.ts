@@ -1,45 +1,47 @@
-import { db_ops, Registration } from '../../lib/db';
+import { connectDB } from '../../lib/db';
+import Registration from '../../models/Registration';
+import Event from '../../models/Event';
+import { createPaymentIntent } from '../../lib/stripe';
 
-export default async function handler(req: Request) {
-  const { method } = req;
-
+export async function POST(req: Request) {
   try {
-    switch (method) {
-      case 'GET':
-        const registrations = await db_ops.getAll<Registration>('registrations');
-        return new Response(JSON.stringify(registrations), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
+    await connectDB();
+    const { eventId, firstName, lastName, email, phone } = await req.json();
 
-      case 'POST':
-        const { eventId, firstName, lastName, email, phone } = await req.json();
-        
-        // Validate required fields
-        if (!eventId || !firstName || !lastName || !email || !phone) {
-          return new Response('Missing required fields', { status: 400 });
-        }
-
-        // Create registration
-        const registrationId = await db_ops.create<Registration>('registrations', {
-          eventId,
-          firstName,
-          lastName,
-          email,
-          phone,
-          paymentStatus: 'pending'
-        });
-
-        return new Response(JSON.stringify({ id: registrationId }), {
-          status: 201,
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-      default:
-        return new Response('Method not allowed', { status: 405 });
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return new Response(
+        JSON.stringify({ message: 'Event not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
     }
+
+    if (event.spotsAvailable <= 0) {
+      return new Response(
+        JSON.stringify({ message: 'Event is fully booked' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const paymentIntent = await createPaymentIntent(event.price);
+
+    const registration = await Registration.create({
+      eventId,
+      firstName,
+      lastName,
+      email,
+      phone,
+      paymentIntentId: paymentIntent.id,
+    });
+
+    return new Response(
+      JSON.stringify({ registration, clientSecret: paymentIntent.client_secret }),
+      { status: 201, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Registrations API error:', error);
-    return new Response('Internal Server Error', { status: 500 });
+    return new Response(
+      JSON.stringify({ message: 'Failed to create registration' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

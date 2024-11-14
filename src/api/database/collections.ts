@@ -1,22 +1,41 @@
-import { db_ops } from '../../lib/db';
+import { connectDB } from '../../lib/db';
+import mongoose from 'mongoose';
+import User from '../../models/User';
+import Event from '../../models/Event';
+import Registration from '../../models/Registration';
+import GalleryItem from '../../models/GalleryItem';
+import Expense from '../../models/Expense';
 
-export default async function handler(req: Request) {
-  const { method } = req;
+const models = {
+  User,
+  Event,
+  Registration,
+  GalleryItem,
+  Expense,
+};
 
+export async function GET() {
   try {
-    switch (method) {
-      case 'GET':
-        const collections = ['users', 'events', 'registrations', 'gallery', 'expenses'];
-        return new Response(JSON.stringify(collections), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
+    await connectDB();
+    
+    const collections = await Promise.all(
+      Object.entries(models).map(async ([name, model]) => {
+        const records = await model.find({});
+        return {
+          name,
+          records: records.map(record => record.toObject()),
+        };
+      })
+    );
 
-      default:
-        return new Response('Method not allowed', { status: 405 });
-    }
+    return new Response(
+      JSON.stringify(collections),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Collections API error:', error);
-    return new Response('Internal Server Error', { status: 500 });
+    return new Response(
+      JSON.stringify({ message: 'Failed to fetch collections' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

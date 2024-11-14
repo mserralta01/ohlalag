@@ -1,32 +1,37 @@
-import { db_ops, Event } from '../../lib/db';
+import { connectDB } from '../../lib/db';
+import Event from '../../models/Event';
 
-export default async function handler(req: Request) {
-  const { method } = req;
-
+export async function GET() {
   try {
-    switch (method) {
-      case 'GET':
-        const events = await db_ops.getAll<Event>('events');
-        // Sort events by date
-        events.sort((a, b) => a.date.toMillis() - b.date.toMillis());
-        return new Response(JSON.stringify(events), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
+    await connectDB();
+    const events = await Event.find().sort({ date: 1 });
 
-      case 'POST':
-        const eventData = await req.json();
-        const eventId = await db_ops.create<Event>('events', eventData);
-        return new Response(JSON.stringify({ id: eventId }), {
-          status: 201,
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-      default:
-        return new Response('Method not allowed', { status: 405 });
-    }
+    return new Response(
+      JSON.stringify(events),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Events API error:', error);
-    return new Response('Internal Server Error', { status: 500 });
+    return new Response(
+      JSON.stringify({ message: 'Failed to fetch events' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    await connectDB();
+    const eventData = await req.json();
+    const event = await Event.create(eventData);
+
+    return new Response(
+      JSON.stringify(event),
+      { status: 201, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ message: 'Failed to create event' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

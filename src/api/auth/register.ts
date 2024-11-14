@@ -1,59 +1,38 @@
-import { db_ops, User } from '../../lib/db';
-import { getAuth } from 'firebase-admin/auth';
+import { connectDB } from '../../lib/db';
+import User from '../../models/User';
+import { generateToken } from '../../lib/auth';
 
-export default async function handler(req: Request) {
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
-
+export async function POST(req: Request) {
   try {
+    await connectDB();
     const { firstName, lastName, email, password, phone } = await req.json();
 
-    // Validate required fields
-    if (!firstName || !lastName || !email || !password || !phone) {
-      return new Response('Missing required fields', { status: 400 });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return new Response(
+        JSON.stringify({ message: 'Email already registered' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Create user in Firebase Auth
-    const auth = getAuth();
-    const userRecord = await auth.createUser({
-      email,
-      password,
-      displayName: `${firstName} ${lastName}`,
-      phoneNumber: phone.startsWith('+') ? phone : `+1${phone}` // Ensure proper phone format
-    });
-
-    // Create user document in Firestore
-    await db_ops.create<User>('users', {
+    const user = await User.create({
       firstName,
       lastName,
       email,
+      password,
       phone,
-      role: 'user'
-      // No need to store password as it's handled by Firebase Auth
     });
 
-    // Create custom token for immediate sign-in
-    const token = await auth.createCustomToken(userRecord.uid);
+    const token = await generateToken(user);
 
-    return new Response(JSON.stringify({
-      token,
-      user: {
-        id: userRecord.uid,
-        email: userRecord.email,
-        displayName: userRecord.displayName,
-        role: 'user'
-      }
-    }), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({ user, token }),
+      { status: 201, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Registration error:', error);
-    const message = error instanceof Error ? error.message : 'Internal Server Error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({ message: 'Registration failed' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

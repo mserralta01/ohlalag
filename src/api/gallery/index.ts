@@ -1,32 +1,37 @@
-import { db_ops, GalleryItem } from '../../lib/db';
+import { connectDB } from '../../lib/db';
+import GalleryItem from '../../models/GalleryItem';
 
-export default async function handler(req: Request) {
-  const { method } = req;
-
+export async function GET() {
   try {
-    switch (method) {
-      case 'GET':
-        const items = await db_ops.getAll<GalleryItem>('gallery');
-        // Sort items by date descending
-        items.sort((a, b) => b.date.toMillis() - a.date.toMillis());
-        return new Response(JSON.stringify(items), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
+    await connectDB();
+    const items = await GalleryItem.find().sort({ date: -1 });
 
-      case 'POST':
-        const itemData = await req.json();
-        const itemId = await db_ops.create<GalleryItem>('gallery', itemData);
-        return new Response(JSON.stringify({ id: itemId }), {
-          status: 201,
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-      default:
-        return new Response('Method not allowed', { status: 405 });
-    }
+    return new Response(
+      JSON.stringify(items),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Gallery API error:', error);
-    return new Response('Internal Server Error', { status: 500 });
+    return new Response(
+      JSON.stringify({ message: 'Failed to fetch gallery items' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    await connectDB();
+    const itemData = await req.json();
+    const item = await GalleryItem.create(itemData);
+
+    return new Response(
+      JSON.stringify(item),
+      { status: 201, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ message: 'Failed to create gallery item' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
