@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Database, LogOut, User } from 'lucide-react';
+import { Menu, X, Database, LogOut, User, Users, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-  const { user, logout } = useAuth();
+  const { user, logout, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
 
   const testDatabase = async () => {
@@ -45,31 +45,6 @@ function Navbar() {
             <Link to="/" className="font-serif text-2xl text-rose-600 hover:text-rose-700 transition-colors">
               Designs by Oh-La-La
             </Link>
-            <div className="hidden md:flex items-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={testDatabase}
-                disabled={dbStatus === 'testing'}
-                className="flex items-center space-x-2 px-4 py-2 rounded-full transition-colors mr-8"
-              >
-                <Database className="w-4 h-4" />
-                <span className={`
-                  ${dbStatus === 'idle' && 'text-gray-600'}
-                  ${dbStatus === 'testing' && 'text-blue-600'}
-                  ${dbStatus === 'success' && 'text-green-600'}
-                  ${dbStatus === 'error' && 'text-red-600'}
-                `}>
-                  {dbStatus === 'idle' && 'Test DB'}
-                  {dbStatus === 'testing' && 'Testing...'}
-                  {dbStatus === 'success' && 'Connection Successful'}
-                  {dbStatus === 'error' && 'Connection Failed'}
-                </span>
-              </motion.button>
-              <Link to="/" className="text-rose-600 hover:text-rose-700 transition-colors">
-                Home
-              </Link>
-            </div>
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
@@ -81,6 +56,18 @@ function Navbar() {
             </Link>
             {user ? (
               <div className="flex items-center space-x-4">
+                {isSuperAdmin && (
+                  <>
+                    <Link to="/admin/crm" className="flex items-center space-x-2 text-rose-600 hover:text-rose-700">
+                      <Users className="w-4 h-4" />
+                      <span>CRM</span>
+                    </Link>
+                    <Link to="/admin/ateliers" className="flex items-center space-x-2 text-rose-600 hover:text-rose-700">
+                      <Calendar className="w-4 h-4" />
+                      <span>Manage Ateliers</span>
+                    </Link>
+                  </>
+                )}
                 <Link to="/dashboard" className="flex items-center space-x-2 text-rose-600 hover:text-rose-700">
                   <User className="w-4 h-4" />
                   <span>{user.displayName || 'Account'}</span>
@@ -137,6 +124,24 @@ function Navbar() {
             </Link>
             {user ? (
               <>
+                {isSuperAdmin && (
+                  <>
+                    <Link
+                      to="/admin/crm"
+                      className="block px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      CRM
+                    </Link>
+                    <Link
+                      to="/admin/ateliers"
+                      className="block px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Manage Ateliers
+                    </Link>
+                  </>
+                )}
                 <Link
                   to="/dashboard"
                   className="block px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors"

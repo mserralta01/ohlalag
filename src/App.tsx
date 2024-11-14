@@ -11,6 +11,8 @@ import Gallery from './pages/Gallery';
 import Dashboard from './pages/Dashboard';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
+import AdminCRM from './pages/AdminCRM';
+import AdminAteliers from './pages/AdminAteliers';
 import { AuthProvider } from './components/auth/AuthProvider';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
@@ -30,6 +32,8 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/login" element={<LoginForm />} />
               <Route path="/register" element={<RegisterForm />} />
+              <Route path="/admin/crm" element={<AdminCRM />} />
+              <Route path="/admin/ateliers" element={<AdminAteliers />} />
             </Routes>
           </main>
           <Footer />

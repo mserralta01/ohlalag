@@ -8,24 +8,31 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider
 } from 'firebase/auth';
-import { auth, googleProvider, facebookProvider } from '../lib/firebase';
+import { auth, googleProvider, facebookProvider, SUPER_ADMIN_EMAIL } from '../lib/firebase';
 
-export function useAuth(requireAuth = false) {
+export function useAuth(requireAuth = false, requireAdmin = false) {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setIsSuperAdmin(user?.email === SUPER_ADMIN_EMAIL);
       setLoading(false);
+
       if (requireAuth && !user) {
         navigate('/login');
+      }
+
+      if (requireAdmin && user?.email !== SUPER_ADMIN_EMAIL) {
+        navigate('/');
       }
     });
 
     return () => unsubscribe();
-  }, [requireAuth, navigate]);
+  }, [requireAuth, requireAdmin, navigate]);
 
   const signInWithGoogle = async () => {
     try {
@@ -63,6 +70,7 @@ export function useAuth(requireAuth = false) {
     signInWithGoogle, 
     signInWithFacebook, 
     logout,
-    isAuthenticated: !!user 
+    isAuthenticated: !!user,
+    isSuperAdmin
   };
 }
