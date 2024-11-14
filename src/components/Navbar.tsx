@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, Database } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, Database, LogOut, User } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../hooks/useAuth';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const testDatabase = async () => {
     setDbStatus('testing');
@@ -22,6 +25,15 @@ function Navbar() {
     } catch (error) {
       setDbStatus('error');
       setTimeout(() => setDbStatus('idle'), 3000);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
     }
   };
 
@@ -67,9 +79,25 @@ function Navbar() {
             <Link to="/gallery" className="text-rose-600 hover:text-rose-700 transition-colors">
               Gallery
             </Link>
-            <Link to="/dashboard" className="btn-primary">
-              Account
-            </Link>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/dashboard" className="flex items-center space-x-2 text-rose-600 hover:text-rose-700">
+                  <User className="w-4 h-4" />
+                  <span>{user.displayName || 'Account'}</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 text-rose-600 hover:text-rose-700"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" className="btn-primary">
+                Sign In
+              </Link>
+            )}
           </div>
 
           <div className="md:hidden flex items-center">
@@ -107,33 +135,34 @@ function Navbar() {
             >
               Gallery
             </Link>
-            <Link
-              to="/dashboard"
-              className="block px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              Account
-            </Link>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={testDatabase}
-              disabled={dbStatus === 'testing'}
-              className="flex items-center space-x-2 px-3 py-2 rounded-xl w-full text-left"
-            >
-              <Database className="w-4 h-4" />
-              <span className={`
-                ${dbStatus === 'idle' && 'text-gray-600'}
-                ${dbStatus === 'testing' && 'text-blue-600'}
-                ${dbStatus === 'success' && 'text-green-600'}
-                ${dbStatus === 'error' && 'text-red-600'}
-              `}>
-                {dbStatus === 'idle' && 'Test DB'}
-                {dbStatus === 'testing' && 'Testing...'}
-                {dbStatus === 'success' && 'Connection Successful'}
-                {dbStatus === 'error' && 'Connection Failed'}
-              </span>
-            </motion.button>
+            {user ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="block px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Account
+                </Link>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="block px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       )}

@@ -1,43 +1,45 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LogIn } from 'lucide-react';
-import useAuthStore from '../../store/authStore';
+import { LogIn, Facebook, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 function LoginForm() {
-  const [credentials, setCredentials] = useState({
-    email: '',
-    password: '',
-  });
   const [error, setError] = useState('');
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { signInWithGoogle, signInWithFacebook } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
+  const handleGoogleLogin = async () => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+      setLoading(true);
+      setError('');
+      await signInWithGoogle();
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with Google');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      setAuth(data.user, data.token);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+  const handleFacebookLogin = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      await signInWithFacebook();
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with Facebook');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto">
+    <div className="max-w-md mx-auto pt-12">
       <div className="bg-white p-8 rounded-2xl shadow-lg">
         <div className="flex items-center justify-center mb-6">
           <LogIn className="w-8 h-8" />
@@ -51,42 +53,29 @@ function LoginForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={credentials.email}
-              onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-              className="w-full rounded-lg border-gray-300 shadow-sm focus:border-black focus:ring-black"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={credentials.password}
-              onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-              className="w-full rounded-lg border-gray-300 shadow-sm focus:border-black focus:ring-black"
-              required
-            />
-          </div>
+        <div className="space-y-4">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            <Mail className="w-5 h-5" />
+            Continue with Google
+          </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            type="submit"
-            className="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800 transition-colors"
+            onClick={handleFacebookLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white py-2 px-4 rounded-lg hover:bg-[#1864D9] transition-colors disabled:opacity-50"
           >
-            Sign In
+            <Facebook className="w-5 h-5" />
+            Continue with Facebook
           </motion.button>
-        </form>
+        </div>
       </div>
     </div>
   );
